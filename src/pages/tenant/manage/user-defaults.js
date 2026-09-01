@@ -1,8 +1,7 @@
 import { Layout as DashboardLayout } from '../../../layouts/index.js'
-import { HeaderedTabbedLayout } from '../../../layouts/HeaderedTabbedLayout'
-import { CippDataTable } from '../../../components/CippTable/CippDataTable'
-import { CippHead } from '../../../components/CippComponents/CippHead'
-import { Box, Button } from '@mui/material'
+import { TabbedLayout } from '../../../layouts/TabbedLayout'
+import { CippTablePage } from '../../../components/CippComponents/CippTablePage.jsx'
+import { Button } from '@mui/material'
 import { Delete, Add, Edit } from '@mui/icons-material'
 import { useDialog } from '../../../hooks/use-dialog'
 import { CippApiDialog } from '../../../components/CippComponents/CippApiDialog'
@@ -331,31 +330,28 @@ const Page = () => {
   }
 
   return (
-    <HeaderedTabbedLayout tabOptions={tabOptions} title={pageTitle}>
-      <CippHead title={pageTitle} />
-      <Box sx={{ py: 2 }}>
-        <CippDataTable
-          title="User Default Templates"
-          api={{ url: '/api/ListNewUserDefaults?includeAllTenants=false' }}
-          queryKey={`ListNewUserDefaults-${userSettings.currentTenant}`}
-          actions={actions}
-          offCanvas={offCanvas}
-          simpleColumns={[
-            'templateName',
-            'defaultForTenant',
-            'displayName',
-            'usernameFormat',
-            'usernameSpaceHandling',
-            'usageLocation',
-            'department',
-          ]}
-          cardButton={
-            <Button startIcon={<Add />} onClick={createDialog.handleOpen} sx={{ mr: 1 }}>
-              Add Template
-            </Button>
-          }
-        />
-      </Box>
+    <>
+      <CippTablePage
+        title={pageTitle}
+        apiUrl={`/api/ListNewUserDefaults?includeAllTenants=false`}
+        queryKey={`ListNewUserDefaults-${userSettings.currentTenant}`}
+        actions={actions}
+        offCanvas={offCanvas}
+        simpleColumns={[
+          'templateName',
+          'defaultForTenant',
+          'displayName',
+          'usernameFormat',
+          'usernameSpaceHandling',
+          'usageLocation',
+          'department',
+        ]}
+        cardButton={
+          <Button startIcon={<Add />} onClick={createDialog.handleOpen} sx={{ mr: 1 }}>
+            Add Template
+          </Button>
+        }
+      />
 
       <CippApiDialog
         createDialog={createDialog}
@@ -370,10 +366,14 @@ const Page = () => {
           ...templateFields,
         ]}
       />
-    </HeaderedTabbedLayout>
+    </>
   )
 }
 
-Page.getLayout = (page) => <DashboardLayout>{page}</DashboardLayout>
+Page.getLayout = (page) => (
+  <DashboardLayout>
+    <TabbedLayout tabOptions={tabOptions}>{page}</TabbedLayout>
+  </DashboardLayout>
+)
 
 export default Page

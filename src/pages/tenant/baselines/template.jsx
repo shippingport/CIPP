@@ -51,7 +51,6 @@ import { CippApiResults } from '../../../components/CippComponents/CippApiResult
 const conditionTypeOptions = [
   { label: 'Time in previous stage', value: 'time' },
   { label: 'Tenant variable', value: 'variable' },
-  { label: 'Is in tenant group', value: 'group' },
   { label: 'All previous stage items applied successfully', value: 'success' },
   { label: 'Manual approval by an operator', value: 'manual' },
 ]
@@ -88,10 +87,6 @@ const toConditionDefaults = (condition) => ({
     (option) => option.value === condition.operator
   ),
   value: condition.value,
-  // The stored groupName keeps the picker readable without waiting for the group list.
-  group: condition.group
-    ? { label: condition.groupName ?? condition.group, value: condition.group }
-    : undefined,
 })
 
 // The API serializes single-element arrays as a bare object; normalize before handing
@@ -147,7 +142,6 @@ const StagePanel = ({
   catalogByName,
   registerSerializer,
   variableOptions,
-  groupOptions,
 }) => {
   const formControl = useForm({
     mode: 'onBlur',
@@ -156,13 +150,7 @@ const StagePanel = ({
       conditions: stage.conditionDefaults,
     },
   })
-  // Watch ONLY the conditions branch. A whole-form watch re-renders this panel - and
-  // every standard item in it - on each keystroke in any of the standards' fields,
-  // which makes the editor crawl once a few hundred standards are loaded.
-  const watchConditions = useWatch({
-    control: formControl.control,
-    name: 'conditions',
-  })
+  const watchForm = useWatch({ control: formControl.control })
   const [expandedStandard, setExpandedStandard] = useState(null)
   const [conditionIds, setConditionIds] = useState(stage.conditionIds)
   const [nextConditionId, setNextConditionId] = useState(
@@ -201,13 +189,8 @@ const StagePanel = ({
     { label: 'Alert when remediated', field: 'alertOnRemediate', value: true },
   ]
   const applyPostureToAll = (field, value) => {
-    // Force the value onto every standard: dirty + touched so the form registers
-    // the change even on fields the operator never interacted with.
     stage.standards.forEach((instanceKey) => {
-      formControl.setValue(`${instanceKey}.${field}`, value, {
-        shouldDirty: true,
-        shouldTouch: true,
-      })
+      formControl.setValue(`${instanceKey}.${field}`, value)
     })
   }
 
@@ -240,30 +223,20 @@ const StagePanel = ({
             variable: unwrapValue(condition.variable),
             operator: unwrapValue(condition.operator),
             value: condition.value,
-            group: unwrapValue(condition.group),
-            groupName: condition.group?.label ?? unwrapValue(condition.group),
           }
         }),
         standards: stage.standards.map((instanceKey) => {
           const config = values[instanceKey] ?? {}
-          // A standard the operator never expanded never mounts its settings fields,
-          // so its variables never enter the form - serialize the SAVED variables for
-          // those, or saving a large baseline would silently wipe their configuration.
-          // Unwrapped either way: legacy saves stored option objects ({label, value})
-          // for some variables, and passing them through verbatim keeps that debt alive.
-          const savedVariables =
-            stage.standardConfigs?.[instanceKey]?.variables ?? {}
           return {
             standard: instanceKey.split('#')[0],
             instance: instanceKey,
             variables: Object.fromEntries(
-              Object.entries(config.variables ?? savedVariables).map(
-                ([key, value]) => [key, unwrapValue(value)]
-              )
+              Object.entries(config.variables ?? {}).map(([key, value]) => [
+                key,
+                unwrapValue(value),
+              ])
             ),
-            // Report-only unless the operator explicitly enabled remediation - a
-            // missing value must never fail open into auto-fixing tenants.
-            remediateEnabled: config.remediateEnabled ?? false,
+            remediateEnabled: config.remediateEnabled ?? true,
             alertEnabled: config.alertEnabled ?? true,
             alertOnRemediate: config.alertOnRemediate ?? false,
           }
@@ -326,10 +299,11 @@ const StagePanel = ({
               Graduation conditions
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              A tenant advances from Stage {stageIndex} into this stage once
-              the conditions below are met. Earlier stages keep applying; if
-              the same standard is configured in both, this stage's settings
-              win.
+              Tenants graduate from Stage {stageIndex} into this stage when the
+              conditions below are met. Stages are cumulative: a tenant in this
+              stage also receives everything from the previous stages. If this
+              stage configures a standard an earlier stage also configures, the
+              settings here replace the earlier ones once the tenant arrives.
             </Typography>
             {conditionIds.length > 1 && (
               <Box sx={{ maxWidth: 380 }}>
@@ -352,8 +326,8 @@ const StagePanel = ({
             )}
             {conditionIds.map((conditionId) => {
               const conditionType = get(
-                watchConditions,
-                `${conditionId}.type`
+                watchForm,
+                `conditions.${conditionId}.type`
               )?.value
               return (
                 <Card key={conditionId} variant="outlined">
@@ -446,19 +420,6 @@ const StagePanel = ({
                             />
                           </Box>
                         </Stack>
-                      )}
-                      {conditionType === 'group' && (
-                        <Box sx={{ maxWidth: 380 }}>
-                          <CippFormComponent
-                            type="autoComplete"
-                            name={`conditions.${conditionId}.group`}
-                            label="Tenant group"
-                            formControl={formControl}
-                            options={groupOptions}
-                            multiple={false}
-                            creatable={false}
-                          />
-                        </Box>
                       )}
                       {conditionType === 'success' && (
                         <Typography variant="body2" color="text.secondary">
@@ -561,10 +522,6 @@ const Page = () => {
   const router = useRouter()
   const [activeStage, setActiveStage] = useState(0)
   const [loadedTemplateId, setLoadedTemplateId] = useState(null)
-  // The GUID the next save updates. Null means the save CREATES a baseline (new
-  // editor, or a clone before its first save); the save response's id is adopted
-  // so saving twice never creates twice.
-  const [saveTargetId, setSaveTargetId] = useState(null)
   const [stages, setStages] = useState(() => buildEditorStages(undefined))
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogStageIndex, setDialogStageIndex] = useState(0)
@@ -584,23 +541,6 @@ const Page = () => {
   // and table), all alignment views for every tenant, and the standards catalog.
   const saveBaseline = ApiPostCall({
     relatedQueryKeys: ['ListBaseline*'],
-    onResult: (result) => {
-      const savedId = result?.Metadata?.id
-      if (!savedId) return
-      // Adopt the saved baseline: the next save updates it instead of creating a
-      // duplicate, and the URL reflects it so a refresh keeps editing the same one.
-      // Matching loadedTemplateId also stops the render-phase loader from
-      // re-resetting the form when the refetched list arrives.
-      setSaveTargetId(savedId)
-      setLoadedTemplateId(savedId)
-      if (router.query.id !== savedId || router.query.clone) {
-        router.replace(
-          { pathname: router.pathname, query: { id: savedId } },
-          undefined,
-          { shallow: true }
-        )
-      }
-    },
   })
   // After a save, the natural next step is seeing where the tenants stand - offer a
   // no-changes check right away instead of ending the setup flow in silence.
@@ -611,15 +551,6 @@ const Page = () => {
     url: '/api/ListCustomVariables',
     queryKey: 'ListCustomVariables',
   })
-  // Same query key as the Edit Tenant group picker so both share one cached list.
-  const tenantGroupsApi = ApiGetCall({
-    url: '/api/ListTenantGroups',
-    queryKey: 'AllTenantGroups',
-  })
-  const groupOptions = (tenantGroupsApi.data?.Results ?? []).map((group) => ({
-    label: group.Name,
-    value: group.Id,
-  }))
   // Graduation conditions compare against CIPP custom variables; reserved tenant tokens
   // are not useful graduation signals. Creatable, so any variable name can be typed.
   const variableOptions = (customVariablesApi.data?.Results ?? [])
@@ -640,7 +571,6 @@ const Page = () => {
       description: '',
       alertEmails: '',
       alertWebhookUrl: '',
-      disableScheduledRuns: false,
     },
   })
   const watchForm = useWatch({ control: formControl.control })
@@ -649,7 +579,6 @@ const Page = () => {
   // Render-phase reset (not an effect) so the switch happens before anything paints.
   if (template && template.GUID !== loadedTemplateId) {
     setLoadedTemplateId(template.GUID)
-    setSaveTargetId(router.query.clone ? null : template.GUID)
     setStages(buildEditorStages(template))
     setActiveStage(0)
     setHasUnsavedChanges(false)
@@ -660,7 +589,6 @@ const Page = () => {
       description: template.description,
       alertEmails: template.alertEmails ?? '',
       alertWebhookUrl: template.alertWebhookUrl ?? '',
-      disableScheduledRuns: template.disableScheduledRuns === true,
       // The tenant selector's own option objects round-trip verbatim through the API
       // (assignments/exclusions); older saves fall back to name-based options.
       tenantFilter:
@@ -863,7 +791,7 @@ const Page = () => {
     saveBaseline.mutate({
       url: '/api/AddBaseline',
       data: {
-        GUID: saveTargetId ?? undefined,
+        GUID: router.query.clone ? undefined : (loadedTemplateId ?? undefined),
         templateName: values.templateName,
         description: values.description,
         // Send the selector's option objects as-is (label/value/type) so they can be
@@ -880,7 +808,6 @@ const Page = () => {
         ),
         alertEmails: values.alertEmails,
         alertWebhookUrl: values.alertWebhookUrl,
-        disableScheduledRuns: values.disableScheduledRuns === true,
         stages: stages.map(
           (stage, index) =>
             stageSerializers.current[index]?.() ?? {
@@ -917,19 +844,14 @@ const Page = () => {
           </Button>
         </Box>
         <Stack
-          direction={{ xs: 'column', sm: 'row' }}
+          direction="row"
           justifyContent="space-between"
-          alignItems={{ xs: 'stretch', sm: 'center' }}
-          spacing={{ xs: 2, sm: 4 }}
+          alignItems="center"
+          spacing={4}
           sx={{ mb: 1 }}
         >
           <Typography variant="h4">{pageTitle}</Typography>
-          <Stack
-            direction="row"
-            spacing={2}
-            useFlexGap
-            sx={{ flexWrap: 'wrap' }}
-          >
+          <Stack direction="row" spacing={2}>
             <PermissionButton
               requiredPermissions={['Tenant.Standards.ReadWrite']}
               variant="contained"
@@ -1048,17 +970,6 @@ const Page = () => {
                     required={false}
                     disableClearable={false}
                   />
-                  <CippFormComponent
-                    type="switch"
-                    name="disableScheduledRuns"
-                    label="Disable Scheduled Runs"
-                    formControl={formControl}
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    With scheduled runs disabled, this baseline only executes
-                    when you run it yourself - drift is not detected or
-                    remediated in between.
-                  </Typography>
                 </Stack>
               </CippButtonCard>
               <CippButtonCard title="Alerting">
@@ -1166,7 +1077,6 @@ const Page = () => {
                     catalogByName={catalogByName}
                     registerSerializer={registerSerializer}
                     variableOptions={variableOptions}
-                    groupOptions={groupOptions}
                   />
                 ))}
               </CardContent>

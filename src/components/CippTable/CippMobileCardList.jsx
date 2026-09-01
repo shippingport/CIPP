@@ -285,8 +285,6 @@ export const CippMobileCardList = (props) => {
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 0.5,
-                                // long column names: caption ellipsizes, icon stays inside the card clip
-                                maxWidth: "100%",
                                 ...(isBareBoolean && {
                                   border: 1,
                                   borderColor: "divider",

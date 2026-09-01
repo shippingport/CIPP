@@ -4,18 +4,11 @@ import CippWizardPage from '../../../../components/CippWizard/CippWizardPage.jsx
 import { CippTenantStep } from '../../../../components/CippWizard/CippTenantStep.jsx'
 import { CippWizardAutopilotImport } from '../../../../components/CippWizard/CippWizardAutopilotImport'
 import { CippWizardAutopilotOptions } from '../../../../components/CippWizard/CippWizardAutopilotOptions'
-import { CippWizardAutopilotTypeSelection } from '../../../../components/CippWizard/CippWizardAutopilotTypeSelection'
-import { CippWizardDevicePrepImport } from '../../../../components/CippWizard/CippWizardDevicePrepImport'
 
 const Page = () => {
   const steps = [
     {
-      title: 'Deployment Type',
-      description: 'Deployment Type',
-      component: CippWizardAutopilotTypeSelection,
-    },
-    {
-      title: 'Tenant Selection',
+      title: 'Step 1',
       description: 'Tenant Selection',
       component: CippTenantStep,
       componentProps: {
@@ -24,10 +17,9 @@ const Page = () => {
       },
     },
     {
-      title: 'Autopilot Device Import',
+      title: 'Step 2',
       description: 'Device Import',
       component: CippWizardAutopilotImport,
-      showStepWhen: (values) => values?.deploymentType !== 'devicePrep',
       componentProps: {
         name: 'autopilotData',
         fields: [
@@ -66,66 +58,20 @@ const Page = () => {
       },
     },
     {
-      title: 'Autopilot Options',
+      title: 'Step 3',
       description: 'Extra Options',
       component: CippWizardAutopilotOptions,
-      showStepWhen: (values) => values?.deploymentType !== 'devicePrep',
     },
     {
-      title: 'Corporate Identifier Import',
-      description: 'Device Import',
-      component: CippWizardDevicePrepImport,
-      showStepWhen: (values) => values?.deploymentType === 'devicePrep',
-      componentProps: {
-        name: 'devicePrepData',
-        fields: [
-          {
-            friendlyName: 'Manufacturer',
-            propertyName: 'manufacturer',
-            alternativePropertyNames: [
-              'Manufacturer name',
-              'oemManufacturerName',
-            ],
-          },
-          {
-            friendlyName: 'Model',
-            propertyName: 'model',
-            alternativePropertyNames: ['Device model', 'modelName'],
-          },
-          {
-            friendlyName: 'Serial Number',
-            propertyName: 'serialNumber',
-            alternativePropertyNames: [
-              'Serial number',
-              'Device Serial Number',
-              'SerialNumber',
-            ],
-          },
-        ],
-        fileName: 'corporate-identifiers-template',
-      },
-    },
-    {
-      title: 'Autopilot Confirmation',
+      title: 'Step 4',
       description: 'Confirmation',
       component: CippWizardConfirmation,
-      showStepWhen: (values) => values?.deploymentType !== 'devicePrep',
-    },
-    {
-      title: 'Device Prep Confirmation',
-      description: 'Confirmation',
-      component: CippWizardConfirmation,
-      showStepWhen: (values) => values?.deploymentType === 'devicePrep',
-      componentProps: {
-        postUrl: '/api/AddCorporateDeviceIdentifier',
-      },
     },
   ]
 
   return (
     <>
       <CippWizardPage
-        initialState={{ deploymentType: 'autopilot' }}
         steps={steps}
         postUrl="/api/AddAPDevice"
         wizardTitle="Add Autopilot device wizard"

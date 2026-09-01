@@ -121,9 +121,6 @@ const initialSettings = {
   bookmarkSidebar: true,
   bookmarkPopover: false,
   compactNav: false,
-  // 'auto' = card list below the md breakpoint, classic table at or above it.
-  // 'cards' / 'table' force one presentation everywhere (per-device escape hatch).
-  tableViewMode: "auto",
 };
 
 const initialState = {

@@ -1,10 +1,11 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/router";
 import PropTypes from "prop-types";
 import ArrowLeftIcon from "@heroicons/react/24/outline/ArrowLeftIcon";
 import {
   Box,
+  Button,
   Container,
   Divider,
   Skeleton,
@@ -15,13 +16,16 @@ import {
   Typography,
 } from "@mui/material";
 import { ActionsMenu } from "../components/actions-menu";
+import { useMediaQuery } from "@mui/material";
 import { getIconByName } from "../utils/icon-registry";
+<<<<<<< HEAD
+=======
 import { useIsMobileLayout } from "../hooks/use-breakpoint";
 import { useActionsDispatch } from "../hooks/use-actions-dispatch";
 import { TabNavigationContext, useTabNavigationValue } from "./tab-navigation-context";
 import { CippPageActionsFab } from "../components/CippComponents/CippPageActionsFab";
 import { CippTabPicker } from "../components/CippComponents/CippTabPicker";
-import { ApiGetCall } from "../api/ApiCall";
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
 
 export const HeaderedTabbedLayout = (props) => {
   const {
@@ -31,23 +35,16 @@ export const HeaderedTabbedLayout = (props) => {
     subtitle,
     actions,
     actionsData,
-    // Without this the dispatch falls back to CippApiDialog's hardcoded title, so a header
-    // action mutates successfully and never invalidates the page query.
-    queryKeys,
     isFetching = false,
     backUrl,
-    // Optional replacement for the title Typography — same slot, same truncation duties.
-    titleControl,
   } = props;
 
-  // The shared hook rather than an inline useMediaQuery: same threshold, but only this one is
-  // mockable, and jsdom has no width-based matchMedia to drive the mobile branch with.
-  const isMobile = useIsMobileLayout();
+  const mdDown = useMediaQuery((theme) => theme.breakpoints.down("md"));
   const router = useRouter();
   const pathname = usePathname();
   const queryParams = router.query;
-  const navigateToTab = useCallback(
-    (value) => {
+  const handleTabsChange = useCallback(
+    (event, value) => {
       //if we have query params, we need to append them to the new path
       router.push(
         {
@@ -58,35 +55,15 @@ export const HeaderedTabbedLayout = (props) => {
         { shallow: true }
       );
     },
-    [router, queryParams]
+    [router]
   );
 
+<<<<<<< HEAD
+  const currentTab = tabOptions.find((option) => option.path === pathname);
+=======
   const handleTabsChange = useCallback((event, value) => navigateToTab(value), [navigateToTab]);
 
-  // Feature-flag gating, same rules as TabbedLayout: a DISABLED flag hides its Pages;
-  // an ENABLED flag hides its HidesPages (the pages it replaces - e.g. Baselines
-  // supersedes the classic Standards and Drift tabs on Manage Tenant).
-  const featureFlags = ApiGetCall({
-    url: "/api/ListFeatureFlags",
-    queryKey: "featureFlags",
-    staleTime: 600000,
-  });
-  const visibleTabs = useMemo(() => {
-    if (!featureFlags.isSuccess || !Array.isArray(featureFlags.data)) return tabOptions;
-    const disabledPages = featureFlags.data
-      .filter((flag) => flag.Enabled === false || flag.enabled === false)
-      .flatMap((flag) => flag.Pages || flag.pages || [])
-      .filter((page) => typeof page === "string");
-    const replacedPages = featureFlags.data
-      .filter((flag) => flag.Enabled === true || flag.enabled === true)
-      .flatMap((flag) => flag.HidesPages || flag.hidesPages || [])
-      .filter((page) => typeof page === "string");
-    const hiddenPages = [...disabledPages, ...replacedPages];
-    if (hiddenPages.length === 0) return tabOptions;
-    return tabOptions.filter((option) => !hiddenPages.includes(option.path));
-  }, [tabOptions, featureFlags.isSuccess, featureFlags.data]);
-
-  const currentTab = visibleTabs.find((option) => option.path === pathname);
+  const currentTab = tabOptions.find((option) => option.path === pathname);
 
   // Below md the tab row scrolls horizontally and still hides tabs off the right edge, so
   // navigation collapses to a picker in the title row — the one part of that row that is
@@ -112,7 +89,7 @@ export const HeaderedTabbedLayout = (props) => {
   );
 
   const tabNavValue = useTabNavigationValue({
-    tabs: visibleTabs,
+    tabs: tabOptions,
     currentPath: pathname,
     onNavigate: navigateToTab,
     actions: sheetActions,
@@ -169,76 +146,58 @@ export const HeaderedTabbedLayout = (props) => {
       </Stack>
     )
   );
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
 
   return (
-    <TabNavigationContext.Provider value={tabNavValue}>
-      <Box
-        sx={{
-          flexGrow: 1,
-          pb: 4,
-        }}
-      >
-        {/* One gutter for the whole page, matching the layout's breadcrumb rail
-            (mx: {xs: 2, md: 3}): the breadcrumbs, this header's text and the left edge of
-            every card below it then share a single left edge. */}
-        <Container maxWidth="xl" sx={{ height: "100%", px: { xs: 2, md: 3 } }}>
-          <Stack spacing={1} sx={{ height: "100%" }}>
-            <Stack spacing={2}>
+    <Box
+      sx={{
+        flexGrow: 1,
+        pb: 4,
+      }}
+    >
+      <Container maxWidth="xl" sx={{ height: "100%" }}>
+        <Stack spacing={1} sx={{ height: "100%" }}>
+          <Stack spacing={2}>
+            <Stack
+              alignItems="flex-start"
+              direction="row"
+              justifyContent="space-between"
+              spacing={1}
+            >
               <Stack spacing={1}>
                 <Stack
-                  alignItems={isMobile ? "center" : "flex-start"}
+                  alignItems="center"
                   direction="row"
-                  justifyContent="space-between"
                   spacing={1}
+                  justifyContent="space-between"
                 >
-                  {/* minWidth: 0 so a long tenant/entity name truncates in the space the
-                      picker leaves rather than pushing it off the right edge of the row.
-                      Scoped to the picker's own breakpoint — above md this is unchanged. */}
-                  <Stack spacing={1} sx={{ minWidth: { xs: 0, md: "auto" } }}>
-                    <Stack
-                      alignItems="center"
-                      direction="row"
-                      spacing={1}
-                      justifyContent="space-between"
-                    >
-                      {/* A name-shaped skeleton, not the word "Loading...": the header is
-                          the entity's identity, and a text placeholder reads as a title.
-                          titleControl lets a page swap the text for an interactive control
-                          in the same clothes (the View User pages mount a user switcher). */}
-                      {isFetching ? (
-                        <Typography
-                          variant={isMobile ? "h6" : "h4"}
-                          noWrap={isMobile}
-                          sx={{ minWidth: 0, flex: 1 }}
-                        >
-                          <Skeleton variant="text" sx={{ maxWidth: 280 }} />
-                        </Typography>
-                      ) : (
-                        titleControl ?? (
-                          <Typography variant={isMobile ? "h6" : "h4"} noWrap={isMobile} sx={{ minWidth: 0 }}>
-                            {title}
-                          </Typography>
+                  <Typography variant={mdDown ? "h6" : "h4"}>{title}</Typography>
+                </Stack>
+                {isFetching ? (
+                  <Skeleton variant="text" width={200} />
+                ) : (
+                  subtitle && (
+                    <Stack alignItems="center" flexWrap="wrap" direction="row" spacing={2}>
+                      {subtitle.map((item, index) =>
+                        item.component ? (
+                          <Box key={index}>{item.component}</Box>
+                        ) : (
+                          <Stack key={index} alignItems="center" direction="row" spacing={1}>
+                            <SvgIcon fontSize="small">{item.icon}</SvgIcon>
+                            <Typography color="text.secondary" variant="body2">
+                              {item.text}
+                            </Typography>
+                          </Stack>
                         )
                       )}
                     </Stack>
-                    {!isMobile && subtitleBlock}
-                  </Stack>
-                  {/* The right half of this row is free below md, which is where the tab
-                      picker goes. Above md it belongs to the Actions menu, as it always did. */}
-                  {isMobile ? (
-                    <CippTabPicker variant="compact" />
-                  ) : (
-                    actions &&
-                    actions.length > 0 && (
-                      <ActionsMenu actions={actions} data={actionsData} disabled={isFetching} />
-                    )
-                  )}
-                </Stack>
-                {/* Below md the subtitle gets the full width instead of sharing the title's
-                    row: a UPN copy-chip squeezed beside a half-width picker has nowhere to go
-                    and runs off the right edge of the screen. */}
-                {isMobile && subtitleBlock}
+                  )
+                )}
               </Stack>
+<<<<<<< HEAD
+              {actions && actions.length > 0 && (
+                <ActionsMenu actions={actions} data={actionsData} disabled={isFetching} />
+=======
               {!isMobile && (
                 <div>
                   <Tabs
@@ -251,7 +210,7 @@ export const HeaderedTabbedLayout = (props) => {
                       },
                     }}
                   >
-                    {visibleTabs.map((option) => {
+                    {tabOptions.map((option) => {
                       const icon = getIconByName(option.icon, { fontSize: "small" });
                       const iconPosition = option.iconPosition ?? "start";
                       const compactIcon = icon && ["end", "start"].includes(iconPosition);
@@ -270,32 +229,54 @@ export const HeaderedTabbedLayout = (props) => {
                   </Tabs>
                   <Divider />
                 </div>
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
               )}
             </Stack>
-            <Box
-              sx={
-                !isMobile && {
-                  flexGrow: 1,
-                  overflow: "auto",
-                  height: "calc(100vh - 350px)",
-                }
-              }
-            >
-              {children}
-            </Box>
+            <div>
+              <Tabs
+                onChange={handleTabsChange}
+                value={currentTab?.path}
+                variant="scrollable"
+                sx={{
+                  "& .MuiTab-root:first-of-type": {
+                    ml: 2,
+                  },
+                }}
+              >
+                {tabOptions.map((option) => {
+                  const icon = getIconByName(option.icon, { fontSize: "small" });
+                  const iconPosition = option.iconPosition ?? "start";
+                  const compactIcon = icon && ["end", "start"].includes(iconPosition);
+
+                  return (
+                    <Tab
+                      key={option.path}
+                      label={option.label}
+                      value={option.path}
+                      icon={icon ?? undefined}
+                      iconPosition={icon ? iconPosition : undefined}
+                      sx={compactIcon ? { minHeight: 48, py: 1.5 } : undefined}
+                    />
+                  );
+                })}
+              </Tabs>
+              <Divider />
+            </div>
           </Stack>
-        </Container>
-      </Box>
-      {/* Not gated on isMobile: crossing the breakpoint with a dialog open — a rotate, or a
-          tablet at 900px — would unmount it mid-request, taking CippApiResults with it.
-          The hook already renders nothing until an action is dispatched. */}
-      {actionsDispatch.dialog}
-      {/* Actions only, and only when no page FAB claimed the corner — otherwise they ride in
-          that sheet. Tabs are in the title row and never come down here. */}
-      {isMobile && sheetActions.length > 0 && !tabNavValue.isActionCornerClaimed && (
-        <CippPageActionsFab ariaLabel="Page actions" claimActionCorner={false} />
-      )}
-    </TabNavigationContext.Provider>
+          <Box
+            sx={
+              !mdDown && {
+                flexGrow: 1,
+                overflow: "auto",
+                height: "calc(100vh - 350px)",
+              }
+            }
+          >
+            {children}
+          </Box>
+        </Stack>
+      </Container>
+    </Box>
   );
 };
 

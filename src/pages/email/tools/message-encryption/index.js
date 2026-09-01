@@ -34,7 +34,6 @@ const Page = () => {
     // pending value against B's tenantFilter, and A's test output would read as B's.
     formControl.reset({
       AzureRMSLicensingEnabled: false,
-      SimplifiedClientAccessEnabled: false,
       Sender: '',
       Recipient: '',
     })
@@ -47,7 +46,6 @@ const Page = () => {
       formControl.reset({
         ...formControl.getValues(),
         AzureRMSLicensingEnabled: !!irm?.AzureRMSLicensingEnabled,
-        SimplifiedClientAccessEnabled: !!irm?.SimplifiedClientAccessEnabled,
       })
     }
   }, [irmRequest.isSuccess, irm])
@@ -80,7 +78,7 @@ const Page = () => {
       value: yesNo(irm?.ExternalLicensingEnabled),
     },
     {
-      label: 'Encrypt Button in Outlook',
+      label: 'Protect Button in Outlook on the Web',
       value: yesNo(irm?.SimplifiedClientAccessEnabled),
     },
     {
@@ -112,7 +110,6 @@ const Page = () => {
         tenantFilter: tenant,
         Action: 'Set',
         AzureRMSLicensingEnabled: !!values?.AzureRMSLicensingEnabled,
-        SimplifiedClientAccessEnabled: !!values?.SimplifiedClientAccessEnabled,
       })}
       addedButtons={
         <Button
@@ -173,14 +170,6 @@ const Page = () => {
             type="switch"
             name="AzureRMSLicensingEnabled"
             label="Enable Purview Message Encryption (Azure RMS licensing)"
-            formControl={formControl}
-          />
-        </Grid>
-        <Grid size={{ xs: 12 }}>
-          <CippFormComponent
-            type="switch"
-            name="SimplifiedClientAccessEnabled"
-            label="Show the Encrypt button in Outlook (simplified client access)"
             formControl={formControl}
           />
         </Grid>

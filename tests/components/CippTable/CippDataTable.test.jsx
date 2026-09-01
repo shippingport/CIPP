@@ -1,19 +1,12 @@
 import React from 'react'
-import { screen, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import { renderWithProviders } from '../../test-utils'
 import { CippDataTable } from '../../../src/components/CippTable/CippDataTable'
+<<<<<<< HEAD
+=======
 import { resetOverlayHistory } from '../../../src/utils/overlay-history'
-
-vi.mock('../../../src/api/ApiCall', async () => (await import('../../mocks/api-call')).apiCallMock())
-import { api, paginatedResult } from '../../mocks/api-call'
-
-// idle keeps static-data tables on their data prop; the nested result is re-wrapped per call like react-query's tracked copy, the memo'd toolbar needs it to see selection
-const nestedRows = [{ id: 'child-1', displayName: 'Jane Doe' }]
-const nestedResult = paginatedResult(nestedRows)
-const idlePaginated = paginatedResult([], { isSuccess: false })
-api.paginated = (opts) => (opts?.url === '/api/TestRelated' ? { ...nestedResult } : idlePaginated)
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
 
 const basicData = [
   { displayName: 'Alice Smith', mail: 'alice@contoso.com', department: 'IT', accountEnabled: true },
@@ -321,6 +314,8 @@ describe('CippDataTable', () => {
     expect(container.querySelector('table')).not.toBeNull()
   })
 })
+<<<<<<< HEAD
+=======
 
 // A card shows a title, subtitle and a few chips/details — on pages that never configured
 // an offCanvas the rest of the row used to be unreachable in card view.
@@ -727,13 +722,7 @@ describe('CippDataTable cards->table toggle scroll', () => {
 
 describe('CippDataTable subTables', () => {
   const parentRows = [{ id: 'parent-1', displayName: 'Finance' }]
-  // live nested table, the shape groups/index.js ships
-  const nestedTable = {
-    title: 'Related for [displayName]',
-    api: { url: '/api/TestRelated', dataKey: 'Results' },
-    simpleColumns: ['displayName'],
-    viewMode: 'cards',
-  }
+  const relatedRows = [{ id: 'child-1', displayName: 'Jane Doe' }]
 
   it('injects a button column that opens a nested table', async () => {
     const user = userEvent.setup()
@@ -748,7 +737,12 @@ describe('CippDataTable subTables', () => {
             id: 'related',
             header: 'Related',
             label: 'View',
-            table: nestedTable,
+            table: {
+              title: 'Related for [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+              viewMode: 'cards',
+            },
           },
         ]}
       />
@@ -781,7 +775,10 @@ describe('CippDataTable subTables', () => {
             header: 'Related',
             label: 'View',
             table: {
-              ...nestedTable,
+              title: 'Related for [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+              viewMode: 'cards',
               actions: [
                 {
                   label: 'Remove',
@@ -804,18 +801,15 @@ describe('CippDataTable subTables', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Row actions' }))
     await user.click(await screen.findByText('Remove'))
 
-    // the row sheet hands the action off to its exit transition
-    await waitFor(() => {
-      expect(rowFn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'child-1',
-          displayName: 'Jane Doe',
-          parent: expect.objectContaining({ id: 'parent-1', displayName: 'Finance' }),
-        }),
-        expect.anything(),
-        expect.anything()
-      )
-    })
+    expect(rowFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'child-1',
+        displayName: 'Jane Doe',
+        parent: expect.objectContaining({ id: 'parent-1', displayName: 'Finance' }),
+      }),
+      expect.anything(),
+      expect.anything()
+    )
 
     rowFn.mockClear()
     await user.click(within(dialog).getByRole('button', { name: 'Select' }))
@@ -823,16 +817,14 @@ describe('CippDataTable subTables', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Actions' }))
     await user.click(await screen.findByText('Remove'))
 
-    await waitFor(() => {
-      expect(rowFn).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'child-1',
-          parent: expect.objectContaining({ id: 'parent-1' }),
-        }),
-        expect.anything(),
-        expect.anything()
-      )
-    })
+    expect(rowFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'child-1',
+        parent: expect.objectContaining({ id: 'parent-1' }),
+      }),
+      expect.anything(),
+      expect.anything()
+    )
   })
 
   it('replaces a data column that shares the subTable id', async () => {
@@ -848,7 +840,12 @@ describe('CippDataTable subTables', () => {
             id: 'related',
             header: 'Related',
             label: 'View',
-            table: nestedTable,
+            table: {
+              title: 'Related for [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+              viewMode: 'cards',
+            },
           },
         ]}
       />
@@ -876,7 +873,12 @@ describe('CippDataTable subTables', () => {
             id: 'related',
             header: 'Related',
             label: 'View',
-            table: nestedTable,
+            table: {
+              title: 'Related for [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+              viewMode: 'cards',
+            },
           },
         ]}
       />
@@ -899,7 +901,12 @@ describe('CippDataTable subTables', () => {
             header: 'Members',
             label: 'View members',
             cachedColumn: 'membersCsv',
-            table: { ...nestedTable, title: 'Members of [displayName]' },
+            table: {
+              title: 'Members of [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+              viewMode: 'cards',
+            },
           },
         ]}
       />
@@ -908,6 +915,34 @@ describe('CippDataTable subTables', () => {
     await waitFor(() => expect(screen.getByText('Finance')).toBeInTheDocument())
     expect(screen.queryByRole('button', { name: 'View members' })).not.toBeInTheDocument()
     expect(screen.getByText('Jane, Bob')).toBeInTheDocument()
+  })
+
+  it('renders cached report columns in table view without a stale column order crash', async () => {
+    renderWithProviders(
+      <CippDataTable
+        viewMode="table"
+        data={[{ id: 'parent-1', displayName: 'Finance', membersCsv: 'Jane, Bob' }]}
+        simpleColumns={['displayName', 'members']}
+        title="Groups"
+        subTables={[
+          {
+            id: 'members',
+            header: 'Members',
+            label: 'View members',
+            cachedColumn: 'membersCsv',
+            table: {
+              title: 'Members of [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+            },
+          },
+        ]}
+      />
+    )
+
+    await waitFor(() => expect(screen.getByText('Finance')).toBeInTheDocument())
+    expect(screen.getByRole('columnheader', { name: 'Members' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'View members' })).not.toBeInTheDocument()
   })
 
   it('still shows the nested table button when cachedColumn is configured but missing from the data', async () => {
@@ -923,7 +958,12 @@ describe('CippDataTable subTables', () => {
             header: 'Members',
             label: 'View members',
             cachedColumn: 'membersCsv',
-            table: { ...nestedTable, title: 'Members of [displayName]' },
+            table: {
+              title: 'Members of [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+              viewMode: 'cards',
+            },
           },
         ]}
       />
@@ -936,7 +976,7 @@ describe('CippDataTable subTables', () => {
   it('shows the nested table button when cachedColumn exists but is empty (live API shape)', async () => {
     renderWithProviders(
       <CippDataTable
-        viewMode="cards"
+        viewMode="table"
         data={[{ id: 'parent-1', displayName: 'Finance', membersCsv: '', ownersCsv: '' }]}
         simpleColumns={['displayName', 'members']}
         title="Groups"
@@ -946,7 +986,11 @@ describe('CippDataTable subTables', () => {
             header: 'Members',
             label: 'View members',
             cachedColumn: 'membersCsv',
-            table: { ...nestedTable, title: 'Members of [displayName]' },
+            table: {
+              title: 'Members of [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+            },
           },
         ]}
       />
@@ -970,9 +1014,10 @@ describe('CippDataTable subTables', () => {
             header: 'Related',
             label: 'View',
             table: {
-              ...nestedTable,
-              // table view, the card header is the only cardButton slot inside a dialog
-              viewMode: 'table',
+              title: 'Related for [displayName]',
+              data: relatedRows,
+              simpleColumns: ['displayName'],
+              viewMode: 'cards',
               cardButton: {
                 label: 'Add Members',
                 url: '/api/EditGroup',
@@ -995,3 +1040,4 @@ describe('CippDataTable subTables', () => {
     expect(await screen.findByText('Add Members for Finance?')).toBeInTheDocument()
   })
 })
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)

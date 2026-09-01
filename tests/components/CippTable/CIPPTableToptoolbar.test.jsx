@@ -220,15 +220,14 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
     })
   }, 30000)
 
-  // pageName '' (jsdom router is '/') means no persistence, the slot tests name their key
   it('restores both persisted slots and discards garbage global values', async () => {
-    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
+    renderGraphTable({}, {
       settings: settingsWith({
         persistFilters: true,
         setLastUsedFilter: vi.fn(),
         lastUsedFilters: {
           // legacy single-slot shape with a non-string global value
-          SlotsTest: { type: 'global', value: [{ id: 'department', value: 'IT' }], name: 'Legacy Garbage' },
+          '': { type: 'global', value: [{ id: 'department', value: 'IT' }], name: 'Legacy Garbage' },
         },
       }),
     })
@@ -242,13 +241,13 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
   })
 
   it('restores both persisted slots and discards new-shape garbage global values', async () => {
-    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
+    renderGraphTable({}, {
       settings: settingsWith({
         persistFilters: true,
         setLastUsedFilter: vi.fn(),
         lastUsedFilters: {
           // new shape can carry the same non-string global garbage the legacy branch discards
-          SlotsTest: {
+          '': {
             graph: null,
             table: { id: 'Garbage', name: 'Garbage', type: 'global', value: [{ id: 'department', value: 'IT' }] },
           },
@@ -265,12 +264,12 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
   })
 
   it('restores a legacy column filter into the table slot', async () => {
-    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
+    renderGraphTable({}, {
       settings: settingsWith({
         persistFilters: true,
         setLastUsedFilter: vi.fn(),
         lastUsedFilters: {
-          SlotsTest: { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
+          '': { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
         },
       }),
     })
@@ -280,17 +279,19 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
     expect(screen.getByRole('button', { name: 'Filters (1)' })).toBeInTheDocument()
   })
 
+<<<<<<< HEAD
+=======
   // Regression: the restore effect used to key on getRequestData.isFetching, re-arming its
   // 100ms timer on every fetch settle (once per page of an auto-paginated load) and
   // overwriting whatever the user had just applied with the persisted filter.
   it('does not clobber a user filter applied after the persisted one was restored', async () => {
     const user = userEvent.setup()
-    renderGraphTable({ persistenceKey: 'SlotsTest' }, {
+    renderGraphTable({}, {
       settings: settingsWith({
         persistFilters: true,
         setLastUsedFilter: vi.fn(),
         lastUsedFilters: {
-          SlotsTest: { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
+          '': { type: 'column', value: [{ id: 'department', value: 'IT' }], name: 'IT only' },
         },
       }),
     })
@@ -370,6 +371,7 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
     expect(screen.getByRole('menuitem', { name: 'Widget View' })).toBeInTheDocument()
   }, 30000)
 
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
   it('renaming an applied graph preset keeps it marked active', async () => {
     const user = userEvent.setup()
     renderGraphTable()
@@ -388,26 +390,4 @@ describe('CIPPTableToptoolbar - preset list refresh', () => {
       expect(within(renamed).queryByTestId('CheckIcon')).not.toBeNull()
     })
   }, 30000)
-})
-
-describe('CIPPTableToptoolbar desktop export', () => {
-  it('Export menu carries the row exports and opens the API response viewer', async () => {
-    const user = userEvent.setup()
-    renderWithProviders(
-      <CippDataTable
-        data={rows}
-        simpleColumns={['displayName', 'mail']}
-        title="Users"
-        maxHeightOffset="100px"
-      />
-    )
-    await screen.findByText('Users')
-
-    await user.click(screen.getByRole('button', { name: /Export/ }))
-    await screen.findByRole('menuitem', { name: 'Export to CSV' })
-    expect(screen.getByRole('menuitem', { name: 'Export to PDF' })).toBeInTheDocument()
-
-    await user.click(screen.getByRole('menuitem', { name: 'View API Response' }))
-    await screen.findByText('API Response')
-  })
 })

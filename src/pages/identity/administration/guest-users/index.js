@@ -133,7 +133,6 @@ const Page = () => {
 
   const tableFilter = (
     <Grid container spacing={2}>
-      {/* stat tiles sit two-up on phones, six stacked rows push the table below the fold. mobile-layout-ok */}
       <Grid size={{ xs: 6, sm: 4, md: 2 }}>
         <SummaryCard
           title="Total Guests"
@@ -145,7 +144,6 @@ const Page = () => {
           onClick={() => setStatusFilter(null)}
         />
       </Grid>
-      {/* mobile-layout-ok */}
       {GUEST_STATUSES.map(({ status, color, icon }) => (
         <Grid size={{ xs: 6, sm: 4, md: 2 }} key={status}>
           <SummaryCard

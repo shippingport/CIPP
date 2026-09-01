@@ -45,11 +45,6 @@ export const nativeMenuItems = [
             permissions: ['Identity.User.*'],
           },
           {
-            title: 'Guest Users',
-            path: '/identity/administration/guest-users',
-            permissions: ['Identity.User.*'],
-          },
-          {
             title: 'Risky Users',
             path: '/identity/administration/risky-users',
             permissions: ['Identity.User.*'],
@@ -216,32 +211,53 @@ export const nativeMenuItems = [
         permissions: ['Tenant.Relationship.*'],
         scope: 'global',
       },
-      // Flag-gated swap: the Baselines feature flag lists this path in its Pages
-      // (hidden while the flag is off) and the classic Standards/Drift paths in
-      // HidesPages (hidden while it is on) - the two never show together.
-      {
-        title: 'Baselines',
-        path: '/tenant/baselines',
-        permissions: ['Tenant.Baselines.*'],
-        scope: 'global',
-      },
-      {
-        title: 'Domains Analyser',
-        path: '/tenant/standards/domains-analyser',
-        permissions: ['Tenant.DomainAnalyser.*'],
-        scope: 'global',
-      },
       {
         title: 'Standards & Drift',
-        path: '/tenant/standards/alignment',
-        permissions: ['Tenant.Standards.*'],
-        scope: 'global',
-      },
-      {
-        title: 'Best Practice Analyser',
-        path: '/tenant/standards/bpa-report',
-        permissions: ['Tenant.BestPracticeAnalyser.*'],
-        scope: 'global',
+        permissions: [
+          'Tenant.Standards.*',
+<<<<<<< HEAD
+=======
+          'Tenant.Baselines.*',
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
+          'Tenant.BestPracticeAnalyser.*',
+          'Tenant.DomainAnalyser.*',
+        ],
+        items: [
+          {
+            title: 'Standards Management',
+            path: '/tenant/standards/alignment',
+            permissions: ['Tenant.Standards.*'],
+            scope: 'global',
+          },
+<<<<<<< HEAD
+          // Baselines mockup - hidden from the nav for now; reach it directly
+=======
+          // Baselines - hidden from the nav for now; reach it directly
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
+          // at /tenant/baselines
+          // {
+          //   title: 'Baselines (Preview)',
+          //   path: '/tenant/baselines',
+<<<<<<< HEAD
+          //   permissions: ['Tenant.Standards.*'],
+=======
+          //   permissions: ['Tenant.Baselines.*'],
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
+          //   scope: 'global',
+          // },
+          {
+            title: 'Best Practice Analyser',
+            path: '/tenant/standards/bpa-report',
+            permissions: ['Tenant.BestPracticeAnalyser.*'],
+            scope: 'global',
+          },
+          {
+            title: 'Domains Analyser',
+            path: '/tenant/standards/domains-analyser',
+            permissions: ['Tenant.DomainAnalyser.*'],
+            scope: 'global',
+          },
+        ],
       },
       {
         title: 'Conditional Access',
@@ -1080,11 +1096,6 @@ export const nativeMenuItems = [
           {
             title: 'Mailbox Restores',
             path: '/email/tools/mailbox-restores',
-            permissions: ['Exchange.Mailbox.*'],
-          },
-          {
-            title: 'Message Encryption',
-            path: '/email/tools/message-encryption',
             permissions: ['Exchange.Mailbox.*'],
           },
         ],

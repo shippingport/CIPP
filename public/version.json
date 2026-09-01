@@ -1,3 +1,8 @@
 {
-  "version": "10.9.1"
+<<<<<<< HEAD
+  "version": "10.8.3"
 }
+=======
+  "version": "10.9.0"
+}
+>>>>>>> parent of 754de69d1 (Merge pull request #366 from CyberDrain/dev)
